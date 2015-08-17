@@ -1,4 +1,4 @@
-/****************************************************************************
+﻿/****************************************************************************
 **
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing/
@@ -53,6 +53,8 @@
 #include <QtNetwork/QNetworkReply>
 #include <QtNetwork/QSslError>
 
+#include <phpcgireply.h>
+
 NetworkAccessManager::NetworkAccessManager(QObject *parent)
     : QNetworkAccessManager(parent),
     requestFinishedCount(0), requestFinishedFromCacheCount(0), requestFinishedPipelinedCount(0),
@@ -78,6 +80,22 @@ NetworkAccessManager::NetworkAccessManager(QObject *parent)
 
 QNetworkReply* NetworkAccessManager::createRequest(Operation op, const QNetworkRequest & req, QIODevice * outgoingData)
 {
+    {
+        QNetworkRequest request = req; // copy so we can modify
+        // this is a temporary hack until we properly use the pipelining flags from QtWebkit
+        // pipeline everything! :)
+        request.setAttribute(QNetworkRequest::HttpPipeliningAllowedAttribute, true);
+        QString scheme = req.url().scheme();
+        QString host = req.url().host();
+        if(scheme=="http" || scheme=="https")
+        {
+            if(host.endsWith(".box"))
+            {
+                qDebug() << ".box host found!";
+                return new PhpCgiReply(this, op, request, outgoingData, NULL);
+            }
+        }
+    }
     QNetworkRequest request = req; // copy so we can modify
     // this is a temporary hack until we properly use the pipelining flags from QtWebkit
     // pipeline everything! :)

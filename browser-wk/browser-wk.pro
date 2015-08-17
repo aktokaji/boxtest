@@ -37,7 +37,8 @@ HEADERS += \
     toolbarsearch.h \
     urllineedit.h \
     webview.h \
-    xbel.h
+    xbel.h \
+    phpcgireply.h
 
 SOURCES += \
     autosaver.cpp \
@@ -60,7 +61,8 @@ SOURCES += \
     urllineedit.cpp \
     webview.cpp \
     xbel.cpp \
-    main.cpp
+    main.cpp \
+    phpcgireply.cpp
 
 RESOURCES += data/data.qrc htmls/htmls.qrc
 
