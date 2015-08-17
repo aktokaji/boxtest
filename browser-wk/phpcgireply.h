@@ -46,16 +46,63 @@ public:
         ////this->setHeader(QNetworkRequest::ContentLengthHeader, m_buffer.bytesAvailable());
         //this->m_buffer.open(QIODevice::ReadOnly);
         QIODevice::setOpenMode(QIODevice::ReadOnly | QIODevice::Unbuffered);
-#if 0x0
-        QTimer::singleShot( 10, this, SIGNAL(metaDataChanged()));
-        QTimer::singleShot( 20, this, SIGNAL(readyRead()) );
-        QTimer::singleShot( 30, this, SIGNAL(finished()) );
-#endif
         connect(&m_proc, SIGNAL(finished(int)), this, SIGNAL(finished()));
         m_proc.setReadChannel(QProcess::StandardOutput);
+        //m_proc.setReadChannel(QProcess::StandardError);
+#if 0x1
+        //SERVER_NAME
+        QStringList env = QProcess::systemEnvironment();
+        if(true)
+        {
+            env << QString("SERVER_NAME=") + req.url().host();
+            //env << QString("X_SERVER_NAME=") + req.url().host();
+            //env << "SERVER_NAME=localhost";
+            env << "SERVER_ROOT=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
+            env << "DOCUMENT_ROOT=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
+            env << "SERVER_SOFTWARE=Mongoose/3.9c";
+            env << "GATEWAY_INTERFACE=CGI/1.1";
+            env << "SERVER_PROTOCOL=HTTP/1.1";
+            env << "REDIRECT_STATUS=200";
+            env << "SERVER_PORT=80";
+            env << "REQUEST_METHOD=GET";
+            env << "REMOTE_ADDR=127.0.0.1";
+            env << "REMOTE_PORT=0";
+            env << "REQUEST_URI=/phpinfo.php";
+            env << "SCRIPT_NAME=/phpinfo.php";
+            env << "SCRIPT_FILENAME=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
+            env << "PATH_TRANSLATED=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
+            env << "HTTPS=off";
+            env << QString("HTTP_HOST=%1:%2").arg(req.url().host()).arg(80);
+        }
+        QList<QByteArray> v_list = req.rawHeaderList();
+        if(true)
+        {
+            for(int i=0; i<v_list.size(); i++)
+            {
+                QByteArray v_name = v_list[i];
+                qDebug() << "[v_name]" << v_name;
+
+            }
+        }
+        if(v_list.contains("Accept"))
+        {
+            env << QString("HTTP_ACCEPT=%1").arg(QString::fromLatin1(req.rawHeader("Accept")));
+        }
+        if(v_list.contains("User-Agent"))
+        {
+            env << QString("HTTP_USER_AGENT=%1").arg(QString::fromLatin1(req.rawHeader("User-Agent")));
+        }
+        if(v_list.contains("Referer"))
+        {
+            env << QString("HTTP_REFERER=%1").arg(QString::fromLatin1(req.rawHeader("Referer")));
+        }
+
+        m_proc.setEnvironment(env);
+#endif
         QStringList arguments;
-        //arguments << "--help";
+        //arguments << "-e";
         arguments << "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
+        //arguments << "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\index.php";
         m_proc.start("E:\\phpdesktop-chrome-31.8-php-5.6.1\\php\\php-cgi.exe", arguments);
 
         //QTimer::singleShot( 10, this, SLOT(onReady()) );
