@@ -30,9 +30,9 @@ protected:
     //PhpCgiBuffer m_buffer;
     PhpCgiProcess m_proc;
 public:
-    void addToEnv(QStringList &env, const QString &name, const QString &val)
+    void addToEnv(QStringList &env, const QString &name, const QVariant &val)
     {
-        env << QString("%1=%1").arg(name).arg(val);
+        env << QString("%1=%2").arg(name).arg(val.toString());
     }
     explicit PhpCgiReply(QNetworkAccessManager *manager, QNetworkAccessManager::Operation op, const QNetworkRequest & req, QIODevice * outgoingData, QObject *parent = 0): QNetworkReply(parent), m_nam(manager)
     {
@@ -43,6 +43,8 @@ public:
         QUrl v_url = req.url();
         QDir v_dir = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
         qDebug() << "[v_dir]" << v_dir;
+
+        QString v_dir_path = v_dir.absolutePath().replace("/", "\\");
 
         qDebug() << "[v_url.path()]" << v_url.path();
         QString v_url_path = v_url.path();
@@ -73,11 +75,9 @@ public:
         QStringList env = QProcess::systemEnvironment();
         if(true)
         {
-            env << QString("SERVER_NAME=") + req.url().host();
-            //env << QString("X_SERVER_NAME=") + req.url().host();
-            //env << "SERVER_NAME=localhost";
-            env << "SERVER_ROOT=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
-            env << "DOCUMENT_ROOT=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
+            addToEnv(env, "SERVER_NAME", req.url().host());
+            addToEnv(env, "SERVER_ROOT", v_dir_path);
+            addToEnv(env, "DOCUMENT_ROOT", v_dir_path);
             env << "SERVER_SOFTWARE=Mongoose/3.9c";
             env << "GATEWAY_INTERFACE=CGI/1.1";
             env << "SERVER_PROTOCOL=HTTP/1.1";
@@ -86,10 +86,12 @@ public:
             env << "REQUEST_METHOD=GET";
             env << "REMOTE_ADDR=127.0.0.1";
             env << "REMOTE_PORT=0";
-            env << "REQUEST_URI=/phpinfo.php";
-            env << "SCRIPT_NAME=/phpinfo.php";
-            env << "SCRIPT_FILENAME=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
-            env << "PATH_TRANSLATED=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
+            addToEnv(env, "REQUEST_URI", v_url_path);
+            addToEnv(env, "SCRIPT_NAME", v_url_path);
+            addToEnv(env, "SCRIPT_FILENAME", v_script_path);
+            //env << "SCRIPT_FILENAME=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
+            addToEnv(env, "PATH_TRANSLATED", v_script_path);
+            //env << "PATH_TRANSLATED=E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
             env << "HTTPS=off";
             env << QString("HTTP_HOST=%1:%2").arg(req.url().host()).arg(80);
         }
@@ -134,8 +136,9 @@ public:
         }
         QStringList arguments;
         //arguments << "-e";
-        arguments << "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
+        //arguments << "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
         //arguments << "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\index.php";
+        arguments << v_script_path;
         m_proc.start("E:\\phpdesktop-chrome-31.8-php-5.6.1\\php\\php-cgi.exe", arguments);
 
         //QTimer::singleShot( 10, this, SLOT(onReady()) );
