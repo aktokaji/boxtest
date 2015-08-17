@@ -30,11 +30,30 @@ protected:
     //PhpCgiBuffer m_buffer;
     PhpCgiProcess m_proc;
 public:
+    void addToEnv(QStringList &env, const QString &name, const QString &val)
+    {
+        env << QString("%1=%1").arg(name).arg(val);
+    }
     explicit PhpCgiReply(QNetworkAccessManager *manager, QNetworkAccessManager::Operation op, const QNetworkRequest & req, QIODevice * outgoingData, QObject *parent = 0): QNetworkReply(parent), m_nam(manager)
     {
         this->setOperation(op);
         this->setRequest(req);
         this->setUrl(req.url());
+
+        QUrl v_url = req.url();
+        QDir v_dir = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
+        qDebug() << "[v_dir]" << v_dir;
+
+        qDebug() << "[v_url.path()]" << v_url.path();
+        QString v_url_path = v_url.path();
+
+        QFile v_script_file = v_dir.absolutePath() + v_url_path;
+        qDebug() << "[v_script_file]" << v_script_file.fileName();
+        qDebug() << "[v_script_file(native)]" << v_script_file.fileName().replace("/", "\\");
+
+        QString v_script_path = v_script_file.fileName().replace("/", "\\");
+
+
         this->setAttribute(QNetworkRequest::HttpStatusCodeAttribute, 200);
         this->setError(NetworkError::NoError, "OK");
         //this->setRawHeader("Content-Type", "text/html; charset=utf-8");
@@ -84,6 +103,7 @@ public:
 
             }
         }
+#if 0x1
         if(v_list.contains("Accept"))
         {
             env << QString("HTTP_ACCEPT=%1").arg(QString::fromLatin1(req.rawHeader("Accept")));
@@ -96,9 +116,22 @@ public:
         {
             env << QString("HTTP_REFERER=%1").arg(QString::fromLatin1(req.rawHeader("Referer")));
         }
-
+#endif
         m_proc.setEnvironment(env);
 #endif
+        if(false)
+        {
+            for(int i=0; i<v_list.size(); i++)
+            {
+                QByteArray v_name = v_list[i];
+                QByteArray v_val = req.rawHeader(v_name);
+                QByteArray v_line = v_name + ": " + v_val;
+                qDebug() << "[v_name]" << v_name;
+                m_proc.write(v_line);
+                m_proc.write("\n");
+            }
+            m_proc.write("\n");
+        }
         QStringList arguments;
         //arguments << "-e";
         arguments << "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
@@ -146,12 +179,9 @@ public:
         //if(m_buffer.atEnd()) QTimer::singleShot(0, this, SIGNAL(finished()));
         return readLen;
 #else
-        qDebug() << "[maxlen]" << maxlen;
+        //qDebug() << "[maxlen]" << maxlen;
         qint64 readLen = m_proc.readData(data, maxlen);
-        qDebug() << "[readLen]" << readLen;
-        //if(readLen>0) m_buffer.seek(m_buffer.pos()+readLen);
-        //qDebug() << "[m_buffer.pos()]" << m_buffer.pos();
-        //if(m_buffer.atEnd()) QTimer::singleShot(0, this, SIGNAL(finished()));
+        //qDebug() << "[readLen]" << readLen;
         return readLen;
 #endif
     }
