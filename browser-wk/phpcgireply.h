@@ -27,27 +27,43 @@ class PhpCgiReply : public QNetworkReply
     Q_OBJECT
 protected:
     QNetworkAccessManager *m_nam = NULL;
+    QIODevice *m_outgoingData = NULL;
     //PhpCgiBuffer m_buffer;
     PhpCgiProcess m_proc;
 public:
     void addToEnv(QStringList &env, const QString &name, const QVariant &val)
     {
-        env << QString("%1=%2").arg(name).arg(val.toString());
+        QString v_set = QString("%1=%2").arg(name).arg(val.toString());
+        qDebug() << "[v_set]" << v_set;
+        env << v_set;
     }
-    explicit PhpCgiReply(QNetworkAccessManager *manager, QNetworkAccessManager::Operation op, const QNetworkRequest & req, QIODevice * outgoingData, QObject *parent = 0): QNetworkReply(parent), m_nam(manager)
+    explicit PhpCgiReply(QNetworkAccessManager *manager,
+                         QNetworkAccessManager::Operation op,
+                         const QNetworkRequest & req,
+                         QIODevice * outgoingData,
+                         QObject *parent = 0): QNetworkReply(parent), m_nam(manager), m_outgoingData(outgoingData)
     {
         this->setOperation(op);
         this->setRequest(req);
         this->setUrl(req.url());
 
+        //QString v_php_cgi_exe = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\php\\php-cgi.exe";
+        QString v_php_cgi_exe = "C:\\xampp\\php\\php-cgi.exe";
+
         QUrl v_url = req.url();
-        QDir v_dir = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
+        //QDir v_dir = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
+        QDir v_dir = "C:\\xampp\\htdocs";
         qDebug() << "[v_dir]" << v_dir;
 
         QString v_dir_path = v_dir.absolutePath().replace("/", "\\");
 
-        qDebug() << "[v_url.path()]" << v_url.path();
         QString v_url_path = v_url.path();
+        qDebug() << "[v_url_path]" << v_url_path;
+
+        //QString v_url_query = v_url.query(QUrl::PrettyDecoded);
+        QString v_url_query = v_url.query(QUrl::EncodeUnicode);
+        //QString v_url_query = v_url.query(QUrl::EncodeReserved);
+        qDebug() << "[v_url_query]" << v_url_query;
 
         QFile v_script_file = v_dir.absolutePath() + v_url_path;
         qDebug() << "[v_script_file]" << v_script_file.fileName();
@@ -67,12 +83,17 @@ public:
         ////this->setHeader(QNetworkRequest::ContentLengthHeader, m_buffer.bytesAvailable());
         //this->m_buffer.open(QIODevice::ReadOnly);
         QIODevice::setOpenMode(QIODevice::ReadOnly | QIODevice::Unbuffered);
+        connect(&m_proc, SIGNAL(started()), this, SLOT(onProcessStarted()));
         connect(&m_proc, SIGNAL(finished(int)), this, SIGNAL(finished()));
         m_proc.setReadChannel(QProcess::StandardOutput);
         //m_proc.setReadChannel(QProcess::StandardError);
 #if 0x1
         //SERVER_NAME
         QStringList env = QProcess::systemEnvironment();
+        if(!v_url_query.isEmpty())
+        {
+            addToEnv(env, "QUERY_STRING", v_url_query);
+        }
         if(true)
         {
             addToEnv(env, "SERVER_NAME", req.url().host());
@@ -81,9 +102,23 @@ public:
             env << "SERVER_SOFTWARE=Mongoose/3.9c";
             env << "GATEWAY_INTERFACE=CGI/1.1";
             env << "SERVER_PROTOCOL=HTTP/1.1";
-            env << "REDIRECT_STATUS=200";
+            //env << "REDIRECT_STATUS=200";
+            env << "REDIRECT_STATUS=CGI";
             env << "SERVER_PORT=80";
-            env << "REQUEST_METHOD=GET";
+            switch(op)
+            {
+            case QNetworkAccessManager::GetOperation:
+                env << "REQUEST_METHOD=GET";
+                break;
+            case QNetworkAccessManager::PostOperation:
+                env << "REQUEST_METHOD=POST";
+                break;
+            case QNetworkAccessManager::PutOperation:
+                env << "REQUEST_METHOD=PUT";
+                break;
+            default:
+                addToEnv(env, "REQUEST_METHOD", op);
+            }
             env << "REMOTE_ADDR=127.0.0.1";
             env << "REMOTE_PORT=0";
             addToEnv(env, "REQUEST_URI", v_url_path);
@@ -118,31 +153,25 @@ public:
         {
             env << QString("HTTP_REFERER=%1").arg(QString::fromLatin1(req.rawHeader("Referer")));
         }
+        if(v_list.contains("Content-Type"))
+        {
+            addToEnv(env, "CONTENT_TYPE", req.rawHeader("Content-Type"));
+        }
+
+        if(v_list.contains("Content-Length"))
+        {
+            addToEnv(env, "CONTENT_LENGTH", req.rawHeader("Content-Length"));
+        }
+
 #endif
         m_proc.setEnvironment(env);
 #endif
-        if(false)
-        {
-            for(int i=0; i<v_list.size(); i++)
-            {
-                QByteArray v_name = v_list[i];
-                QByteArray v_val = req.rawHeader(v_name);
-                QByteArray v_line = v_name + ": " + v_val;
-                qDebug() << "[v_name]" << v_name;
-                m_proc.write(v_line);
-                m_proc.write("\n");
-            }
-            m_proc.write("\n");
-        }
         QStringList arguments;
         //arguments << "-e";
         //arguments << "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\phpinfo.php";
         //arguments << "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www\\index.php";
         arguments << v_script_path;
-        m_proc.start("E:\\phpdesktop-chrome-31.8-php-5.6.1\\php\\php-cgi.exe", arguments);
-
-        //QTimer::singleShot( 10, this, SLOT(onReady()) );
-        //this->setFinished(true);
+        m_proc.start(v_php_cgi_exe, arguments, QProcess::Unbuffered | QProcess::ReadWrite);
     }
     virtual bool isSequential() const override
     {
@@ -221,6 +250,28 @@ protected slots:
         emit metaDataChanged();
         emit readyRead();
         emit finished();
+    }
+    void onProcessStarted()
+    {
+        if(m_outgoingData)
+        {
+#if 0x0
+            for(int i=0; i<v_list.size(); i++)
+            {
+                QByteArray v_name = v_list[i];
+                QByteArray v_val = req.rawHeader(v_name);
+                QByteArray v_line = v_name + ": " + v_val;
+                qDebug() << "[v_line]" << v_line;
+                m_proc.write(v_line);
+                m_proc.write("\n");
+            }
+            m_proc.write("\n");
+#endif
+            QByteArray v_out_bin = m_outgoingData->readAll();
+            qDebug() << "[v_out_bin.size()]" << v_out_bin.size();
+            m_proc.write(v_out_bin);
+            m_proc.closeWriteChannel();
+        }
     }
 };
 
