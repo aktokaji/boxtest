@@ -96,6 +96,8 @@ public:
         }
         if(true)
         {
+            QString v_tmpdir = QDir::tempPath().replace("/", "\\");
+            addToEnv(env, "TMPDIR", v_tmpdir);
             addToEnv(env, "SERVER_NAME", req.url().host());
             addToEnv(env, "SERVER_ROOT", v_dir_path);
             addToEnv(env, "DOCUMENT_ROOT", v_dir_path);
@@ -268,6 +270,7 @@ protected slots:
             m_proc.write("\n");
 #endif
             QByteArray v_out_bin = m_outgoingData->readAll();
+            qDebug() << v_out_bin;
             qDebug() << "[v_out_bin.size()]" << v_out_bin.size();
             m_proc.write(v_out_bin);
             m_proc.closeWriteChannel();
