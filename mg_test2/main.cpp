@@ -46,8 +46,8 @@ int main(int argc, char *argv[])
 
     std::string cgiInterpreter = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\php\\php-cgi.exe";
     ////std::string wwwDirectory = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
-    //QString documentRoot = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
-    QString documentRoot = QString::fromWCharArray(L"E:\\phpdesktop-chrome-31.8-php-5.6.1\\ウェブ");
+    QString documentRoot = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
+    //QString documentRoot = QString::fromWCharArray(L"E:\\phpdesktop-chrome-31.8-php-5.6.1\\ウェブ");
     qDebug() << "[documentRoot]" << documentRoot;
 
     struct mg_server *server1 = NULL;

@@ -51,8 +51,9 @@ public:
         QString v_php_cgi_exe = "C:\\xampp\\php\\php-cgi.exe";
 
         QUrl v_url = req.url();
-        //QDir v_dir = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
-        QDir v_dir = "C:\\xampp\\htdocs";
+        //QDir v_dir = QString::fromWCharArray(L"E:\\phpdesktop-chrome-31.8-php-5.6.1\\ウェブ");
+        QDir v_dir = "E:\\phpdesktop-chrome-31.8-php-5.6.1\\www";
+        //QDir v_dir = "C:\\xampp\\htdocs";
         qDebug() << "[v_dir]" << v_dir;
 
         QString v_dir_path = v_dir.absolutePath().replace("/", "\\");
