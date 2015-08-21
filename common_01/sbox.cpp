@@ -5,7 +5,7 @@
 #include "strconv.h"
 #include <imagehlp.h> // ImageDirectoryEntryToData()
 
-#define SBOX_DBG(format, ...) win32_printf("[SBOX] " format "\n", ## __VA_ARGS__)
+#define SBOX_DBG(format, ...) win32_printfA("[SBOX] " format "\n", ## __VA_ARGS__)
 
 /*
     typedef struct _IMAGE_TLS_DIRECTORY32 {

@@ -4,7 +4,7 @@
 #include <windows.h>
 #include "wine.h"
 #include "win32_print.h"
-#include "tlsdecl.h"
+#include "vardecl.h"
 
 #ifdef __cplusplus
 extern "C" {

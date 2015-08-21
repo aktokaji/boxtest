@@ -9,7 +9,7 @@
 #include "strconv.h"
 #include "win32_print.h"
 
-#define WINE_DBG(format, ...) win32_printf("[WINE] " format "\n", ## __VA_ARGS__)
+#define WINE_DBG(format, ...) win32_printfA("[WINE] " format "\n", ## __VA_ARGS__)
 
 PWINE_TEB /*WINAPI*/ WineNtCurrentTeb(void)
 {
