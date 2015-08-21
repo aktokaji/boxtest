@@ -5,11 +5,12 @@ QT += core
 QT -= gui
 CONFIG += console
 
-SOURCES += main.cpp ../win32.cpp ../win32_print.cpp ../win32_vector.cpp
-SOURCES += ../MemoryModule.c
+SOURCES += main.cpp ../win32.cpp ../win32_print.cpp ../win32_vector.cpp \
+    ../MemoryModule.cpp
+SOURCES +=
 
 msvc {
-  DEFINES += _CRT_NONSTDC_NO_DEPRECATE _CRT_SECURE_NO_WARNINGS
+  DEFINES += _CRT_NONSTDC_NO_DEPRECATE _CRT_SECURE_NO_WARNINGS _UNICODE
   QMAKE_CFLAGS_RELEASE += -Z7 -WX
   QMAKE_CXXFLAGS_RELEASE += -Z7 -WX
   QMAKE_LFLAGS -= /DYNAMICBASE /NXCOMPAT
