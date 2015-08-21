@@ -174,6 +174,7 @@ int main(int argc, char *argv[])
     win32::global_string f_str2 = "[f_str2]:漢字";
     DBG("f_str2=%s", f_str2.c_str());
     qDebug() << f_str2;
+    qDebug() << L"abcえーびーしーx";
 
 	win32_debug_set(true);
 
