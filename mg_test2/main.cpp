@@ -50,9 +50,11 @@ int main(int argc, char *argv[])
     //QString documentRoot = QString::fromWCharArray(L"E:\\phpdesktop-chrome-31.8-php-5.6.1\\ウェブ");
     qDebug() << "[documentRoot]" << documentRoot;
 
-    struct mg_server *server1 = NULL;
+    QString serverName = "SERVER_NAME=nowhere";
 
-    server1 = mg_create_server((void *) "1", ev_handler);
+    putenv(serverName.toLatin1().constData());
+
+    struct mg_server *server1 = mg_create_server((void *) "1", ev_handler);
 
     // Make both server1 and server2 listen on the same sockets
     mg_set_option(server1, "listening_port", "8080");
