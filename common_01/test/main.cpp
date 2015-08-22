@@ -2,7 +2,7 @@
 #include <assert.h>
 
 #ifdef UNICODE
-#define _UNICODE
+//#define _UNICODE
 #endif
 
 #include <windows.h>
@@ -13,14 +13,28 @@
 
 #include "MemoryModule.h"
 
+#include "sbox.h"
+
 #include <tchar.h>
 
 #include <mutex>
 
 #include <QtCore>
+#include <QtGlobal>
 
+#ifdef _DEBUG
 #define DBG(format, ...) win32_printfA("[WMAIN(A)] " format "\n", ## __VA_ARGS__)
 #define DBGW(format, ...) win32_printfW(L"[WMAIN(W)] " format L"\n", ## __VA_ARGS__)
+#else
+#define DBG(format, ...) (void)0;
+#define DBGW(format, ...) (void)0;
+#endif
+
+void myMsgHandler(QtMsgType, const QMessageLogContext &, const QString &msg)
+{
+    OutputDebugStringW(msg.toStdWString().c_str());
+    OutputDebugStringW(L"\n");
+}
 
 struct win32_module
 {
@@ -73,6 +87,7 @@ ALIGNED_ARRAY_DECL(char, l_main_struct_area_3, sizeof(*l_main_struct3), 16);
 
 static void on_process_attach(void)
 {
+    qInstallMessageHandler(myMsgHandler);
 	{
 		LPVOID v_addr = VirtualAlloc(
 			(LPVOID)0x400000, //LPVOID lpAddress,        // 予約またはコミットしたい領域
@@ -132,12 +147,9 @@ static void NTAPI main_tls_callback(PVOID hModule, DWORD dwReason, PVOID pReserv
 {
 	UNREFERENCED_PARAMETER(hModule);
 	UNREFERENCED_PARAMETER(pReserved);
-    OutputDebugStringA("main_tls_callback(1)\n");
-    qDebug() << "main_tls_callback(2)" << dwReason;
 	DBG("main_tls_callback(%s): dwReason=0x%08x (%s)", TLS_CALLBACK_SECT, dwReason, win32_tls_callback_reason_label(dwReason));
-    qDebug() << "main_tls_callback(3)" << dwReason;
-    win32::global_string f_str = "[f_str]:漢字";
-    qDebug() << f_str;
+    ////win32::global_string f_str = "[f_str]:漢字";
+    ////qDebug() << f_str;
     switch(dwReason){
 	case DLL_PROCESS_ATTACH:
 		DBG("DLL_PROCESS_ATTACH(start)");
@@ -160,21 +172,34 @@ static void NTAPI main_tls_callback(PVOID hModule, DWORD dwReason, PVOID pReserv
 }
 TLS_CALLBACK_DECL(TLS_CALLBACK_SECT, __main_tls_callback__, main_tls_callback);
 
-static int RunFromMemory(void);
+//static int RunFromMemory(void);
+static int RunFromMemory(const QString &fileName);
 
 //int wmain(int argc, wchar_t *argv[])
 int main(int argc, char *argv[])
 {
-	UNREFERENCED_PARAMETER(argc);
-	UNREFERENCED_PARAMETER(argv);
+    //UNREFERENCED_PARAMETER(argc);
+    //UNREFERENCED_PARAMETER(argv);
 
-    qDebug() << "[main(1)]";
+    QCoreApplication app(argc, argv);
+
+    QStringList args = app.arguments();
+
+    qDebug() << "[main(1)]" << args.size() << args;
+
+#if 0x0
+    if(args.size()<2)
+    {
+        qDebug() << L"ファイル名を指定してください！";
+        return 1;
+    }
+#endif
 
 	DBG("wmain() called");
     win32::global_string f_str2 = "[f_str2]:漢字";
     DBG("f_str2=%s", f_str2.c_str());
     qDebug() << f_str2;
-    qDebug() << L"abcえーびーしーx";
+    qDebug() << QString::fromWCharArray(L"abcえーびーしーx©®");
 
 	win32_debug_set(true);
 
@@ -249,7 +274,7 @@ int main(int argc, char *argv[])
 	win32_thread_wchar_insert(&s_wvector, 1, L'漢');
 	DBGW(L"wmain(): s_wvector=%s", s_wvector);
 
-	RunFromMemory();
+    RunFromMemory("E:\\browser.exe");
 
 	DBG("wmain(end))");
 
@@ -258,19 +283,20 @@ int main(int argc, char *argv[])
 
 //#define EXE_FILE TEXT("V:\\QtBuild\\#svn\\qt5.4.0\\#labo\\tls_01\\release\\main.exe")
 //#define EXE_FILE TEXT("V:\\QtBuild\\#svn\\qt5.4.0\\#labo\\browser5.4.0\\release\\browser.exe")
-#define EXE_FILE TEXT("E:\\browser.exe")
+//#define EXE_FILE TEXT("E:\\browser.exe")
 
-int RunFromMemory(void)
+int RunFromMemory(const QString &fileName)
 {
 	FILE *fp;
 	unsigned char *data=NULL;
 	size_t size;
 	HMEMORYMODULE handle;
 	int result = -1;
-	fp = _tfopen(EXE_FILE, _T("rb"));
-	if (fp == NULL)
+    //	fp = _tfopen(EXE_FILE, _T("rb"));
+    fp = _tfopen(fileName.toStdWString().c_str(), _T("rb"));
+    if (fp == NULL)
 	{
-	_tprintf(_T("Can't open executable \"%s\"."), EXE_FILE);
+    _tprintf(_T("Can't open executable \"%s\"."), fileName.toStdWString().c_str());
 	goto exit;
 	}
 	fseek(fp, 0, SEEK_END);
@@ -285,6 +311,9 @@ int RunFromMemory(void)
 	_tprintf(_T("Can't load library from memory.\n"));
 	goto exit;
 	}
+#if 0x1
+    g_sbox_process->alloc_main_thread();
+#endif
 	result = MemoryCallEntryPoint(handle);
 	if (result < 0) {
 	_tprintf(_T("Could not execute entry point: %d\n"), result);

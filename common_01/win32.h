@@ -46,6 +46,7 @@ extern "C" {
 #include <vector>
 #include "vardecl.h"
 #include <QtCore>
+QDebug operator<<(QDebug out, const wchar_t *str);
 namespace win32
 {
 	template<class T>

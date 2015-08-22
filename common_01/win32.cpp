@@ -246,6 +246,12 @@ bool win32_heap_free(HANDLE heap, void *block)
 	return !!v_success;
 }
 
+QDebug operator<<(QDebug out, const wchar_t *str)
+{
+    out << QString::fromWCharArray(str);
+    return out;
+}
+
 QDebug win32::operator<<(QDebug out, const win32::global_string& str)
 {
     QString v_str = QString::fromLocal8Bit(str.c_str());

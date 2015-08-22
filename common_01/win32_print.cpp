@@ -97,8 +97,7 @@ static int win32_write_consoleA(HANDLE hconsole, const char *format, va_list arg
 	}
 	DWORD dwWriteByte;
 	WriteConsoleA(hconsole, v_buffer, len, &dwWriteByte, NULL);
-    OutputDebugStringA(v_buffer);
-    ////qDebug() << v_buffer;
+    //OutputDebugStringA(v_buffer);
 	return len;
 }
 
