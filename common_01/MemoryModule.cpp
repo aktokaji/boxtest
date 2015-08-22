@@ -365,6 +365,9 @@ BuildImportTable(PMEMORYMODULE module)
         uintptr_t *thunkRef;
         FARPROC *funcRef;
         HCUSTOMMODULE *tmp;
+#if 0x1
+        qDebug() << "[BuildImportTable()]" << (LPCSTR) (codeBase + importDesc->Name);
+#endif
         HCUSTOMMODULE handle = module->loadLibrary((LPCSTR) (codeBase + importDesc->Name), module->userdata);
         if (handle == NULL) {
             SetLastError(ERROR_MOD_NOT_FOUND);
@@ -395,6 +398,9 @@ BuildImportTable(PMEMORYMODULE module)
                 *funcRef = module->getProcAddress(handle, (LPCSTR)IMAGE_ORDINAL(*thunkRef), module->userdata);
             } else {
                 PIMAGE_IMPORT_BY_NAME thunkData = (PIMAGE_IMPORT_BY_NAME) (codeBase + (*thunkRef));
+#if 0x1
+                //qDebug() << "  [BuildImportTable()]" << (LPCSTR)&thunkData->Name;
+#endif
                 *funcRef = module->getProcAddress(handle, (LPCSTR)&thunkData->Name, module->userdata);
             }
             if (*funcRef == 0) {

@@ -14,13 +14,16 @@
 #include "MemoryModule.h"
 
 #include "sbox.h"
+#include "wine.h"
 
 #include <tchar.h>
 
-#include <mutex>
+//#include <mutex>
 
 #include <QtCore>
 #include <QtGlobal>
+
+#include <iostream>
 
 #ifdef _DEBUG
 #define DBG(format, ...) win32_printfA("[WMAIN(A)] " format "\n", ## __VA_ARGS__)
@@ -34,6 +37,7 @@ void myMsgHandler(QtMsgType, const QMessageLogContext &, const QString &msg)
 {
     OutputDebugStringW(msg.toStdWString().c_str());
     OutputDebugStringW(L"\n");
+    std::cout << msg.toLocal8Bit().constData() << std::endl;
 }
 
 struct win32_module
@@ -137,7 +141,7 @@ static void on_process_attach(void)
 		v2.push_back(v_added);
 		DBG("v2[0].f_str.c_str()=%s", v2[0].f_str.c_str());
 		DBG("v2.size()=%u", v2.size());
-		std::recursive_mutex v_mutex;
+        //std::recursive_mutex v_mutex;
 		DBG("DLL_PROCESS_ATTACH(8)");
 	}
 }
@@ -187,19 +191,33 @@ int main(int argc, char *argv[])
 
     qDebug() << "[main(1)]" << args.size() << args;
 
-#if 0x0
+    qDebug().noquote() << L"漢字テスト";
+
+    win32_printfA("A:args[0]=%s\n", args[0].toLatin1().constData());
+    printf("B:args[0]=%s\n", args[0].toLatin1().constData());
+
+#if 0x1
     if(args.size()<2)
     {
-        qDebug() << L"ファイル名を指定してください！";
-        return 1;
+        //qDebug() << L"ファイル名を指定してください！";
+        QProcess v_proc;
+        v_proc.setNativeProgram(args[0]);
+        v_proc.setNativeArguments("http://www.google.com");
+        qDebug() << v_proc.nativeProgram();
+        v_proc.start("dummy.exe");
+        v_proc.waitForFinished(-1);
+        QByteArray v_stdout = v_proc.readAll();
+        QString v_string = QString::fromLocal8Bit(v_stdout);
+        qDebug().noquote() << v_string;
+        return 0;
     }
 #endif
 
 	DBG("wmain() called");
     win32::global_string f_str2 = "[f_str2]:漢字";
     DBG("f_str2=%s", f_str2.c_str());
-    qDebug() << f_str2;
-    qDebug() << QString::fromWCharArray(L"abcえーびーしーx©®");
+    qDebug().noquote() << f_str2;
+    qDebug().noquote() << QString::fromWCharArray(L"abcえーびーしーx©®");
 
 	win32_debug_set(true);
 
@@ -284,6 +302,41 @@ int main(int argc, char *argv[])
 //#define EXE_FILE TEXT("V:\\QtBuild\\#svn\\qt5.4.0\\#labo\\tls_01\\release\\main.exe")
 //#define EXE_FILE TEXT("V:\\QtBuild\\#svn\\qt5.4.0\\#labo\\browser5.4.0\\release\\browser.exe")
 //#define EXE_FILE TEXT("E:\\browser.exe")
+extern "C" static LPWSTR __stdcall _GetCommandLineW(VOID)
+{
+    qDebug() << "[_GetCommandLineW(VOID)]";
+    return (LPWSTR)L"browser.exe http://www.google.com";
+}
+
+static HCUSTOMMODULE _LoadLibrary(LPCSTR filename, void *userdata)
+{
+    Q_UNUSED(userdata);
+    HMODULE result = LoadLibraryA(filename);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    return (HCUSTOMMODULE) result;
+}
+
+static FARPROC _GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata)
+{
+    Q_UNUSED(userdata);
+    QString v_name = name;
+    if(v_name=="GetCommandLineW")
+    {
+        //GetCommandLineW();
+        qDebug() << "[_GetProcAddress]" << (const char *)name << QString::fromStdWString(WineGetModuleFileName((HMODULE)module));
+        return (FARPROC)_GetCommandLineW;
+    }
+    return (FARPROC) GetProcAddress((HMODULE) module, name);
+}
+
+static void _FreeLibrary(HCUSTOMMODULE module, void *userdata)
+{
+    Q_UNUSED(userdata);
+    FreeLibrary((HMODULE) module);
+}
 
 int RunFromMemory(const QString &fileName)
 {
@@ -305,7 +358,11 @@ int RunFromMemory(const QString &fileName)
 	fseek(fp, 0, SEEK_SET);
 	fread(data, 1, size, fp);
 	fclose(fp);
+#if 0x0
 	handle = MemoryLoadLibrary(data);
+#else
+    handle = MemoryLoadLibraryEx(data, _LoadLibrary, _GetProcAddress, _FreeLibrary, NULL);
+#endif
 	if (handle == NULL)
 	{
 	_tprintf(_T("Can't load library from memory.\n"));
