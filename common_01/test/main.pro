@@ -6,7 +6,6 @@ QT -= gui
 CONFIG += console
 
 SOURCES += main.cpp ../win32.cpp ../win32_print.cpp ../win32_vector.cpp \
-    ../MemoryModule.cpp \
     ../sbox.cpp \
     ../wine.cpp
 SOURCES +=

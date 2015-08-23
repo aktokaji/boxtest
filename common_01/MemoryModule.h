@@ -115,7 +115,7 @@ int MemoryLoadString(HMEMORYMODULE, UINT, LPTSTR, int);
  */
 int MemoryLoadStringEx(HMEMORYMODULE, UINT, LPTSTR, int, WORD);
 
-#if 0x1
+#if 0x0
 typedef BOOL (WINAPI *DllEntryProc)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
 typedef int (WINAPI *ExeEntryProc)(void);
 

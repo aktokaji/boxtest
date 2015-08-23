@@ -1,6 +1,8 @@
 ﻿#ifndef _SBOX_H_
 #define _SBOX_H_
 
+// [MemoryModule] https://github.com/fancycode/MemoryModule
+
 #include <windows.h>
 #include "wine.h"
 #include "win32_print.h"
@@ -20,7 +22,7 @@ class SBOX_MODULE
 {
 public:
     //HMODULE f_hmodule = NULL;
-    PMEMORYMODULE f_hmodule = NULL;
+    HMEMORYMODULE f_hmodule = NULL;
 	PIMAGE_TLS_DIRECTORY f_tls_dir = NULL;
 	LONG f_tls_index = -1;
 	std::vector<BYTE> f_tls_raw_data;
@@ -58,7 +60,7 @@ public:
 	explicit SBOX_PROCESS();
 	virtual ~SBOX_PROCESS();
     //bool register_module(HMODULE hModule);
-    bool register_module(PMEMORYMODULE hModule);
+    bool register_module(HMEMORYMODULE hModule);
     void alloc_main_thread();
 };
 extern SBOX_PROCESS *g_sbox_process;

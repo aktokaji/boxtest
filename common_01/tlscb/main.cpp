@@ -100,6 +100,8 @@ int main(int argc, char *argv[])
 
     qDebug() << "[main(1)]" << args.size() << args;
 
+    qDebug() << "[main(start)]: tv_int++" << tv_int++;
+
     win32_printfA("A:args[0]=%s\n", args[0].toLatin1().constData());
     printf("B:args[0]=%s\n", args[0].toLatin1().constData());
 
@@ -126,6 +128,8 @@ int main(int argc, char *argv[])
         }, 11);
     t2.join();
     printf("F:j=%d\n", j);
+
+    qDebug() << "[main(end)]: tv_int++" << tv_int++;
 
     return 0;
 }

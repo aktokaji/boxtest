@@ -5,7 +5,13 @@
 #include "strconv.h"
 #include <imagehlp.h> // ImageDirectoryEntryToData()
 
+#include "MemoryModule.cpp"
+
+#ifdef _DEBUG
 #define SBOX_DBG(format, ...) win32_printfA("[SBOX] " format "\n", ## __VA_ARGS__)
+#else
+#define SBOX_DBG(format, ...) (void)0
+#endif
 
 /*
     typedef struct _IMAGE_TLS_DIRECTORY32 {
@@ -18,18 +24,6 @@
     } IMAGE_TLS_DIRECTORY32;
     typedef IMAGE_TLS_DIRECTORY32 *PIMAGE_TLS_DIRECTORY32;
 */
-
-#if 0x0
-static void sbox_puts(const char* s)
-{
-	HANDLE hStdOutput;
-	hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-	DWORD dwWriteByte;
-	WriteConsoleA(hStdOutput, s, lstrlenA(s), &dwWriteByte, NULL);
-	WriteConsoleA(hStdOutput, "\n", 1, &dwWriteByte, NULL);
-	return;
-}
-#endif
 
 SBOX_PROCESS::SBOX_PROCESS()
 {
@@ -62,24 +56,25 @@ SBOX_PROCESS::~SBOX_PROCESS()
 	SBOX_DBG("SBOX_PROCESS deleted: 0x%08x (IMPLICIT_TLS=%u)", f_teb, f_num_implicit_tls);
 }
 //bool SBOX_PROCESS::register_module(HMODULE hModule)
-bool SBOX_PROCESS::register_module(PMEMORYMODULE hModule)
+bool SBOX_PROCESS::register_module(HMEMORYMODULE hModule)
 {
-    unsigned char *codeBase = hModule->codeBase;
-    assert(sizeof(hModule)==4);
-	SBOX_DBG("SBOX_PROCESS::register_module(0x%08x)", hModule);
+    PMEMORYMODULE pModule = (PMEMORYMODULE)hModule;
+    unsigned char *codeBase = pModule->codeBase;
+    assert(sizeof(pModule)==4);
+    SBOX_DBG("SBOX_PROCESS::register_module(0x%08x)", pModule);
     PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)codeBase;
 	if(pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
-		SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): DOS Signature invalid", hModule);
+        SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): DOS Signature invalid", pModule);
 		return false;
 	}
     PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)(((DWORD)codeBase) + pDosHeader->e_lfanew);
 	if(pNtHeaders->Signature != IMAGE_NT_SIGNATURE) {
-		SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): NT Signature mismatch", hModule);
+        SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): NT Signature mismatch", pModule);
 		return false;
 	}
 	//std::list<SBOX_MODULE> f_sbox_module_list;
 	SBOX_MODULE v_sbox_module;
-	v_sbox_module.f_hmodule = hModule;
+    v_sbox_module.f_hmodule = pModule;
 #if 0x0
 	ULONG v_tls_dir_size;
 	PIMAGE_TLS_DIRECTORY v_tls_dir = (PIMAGE_TLS_DIRECTORY)ImageDirectoryEntryToData(
@@ -90,12 +85,12 @@ bool SBOX_PROCESS::register_module(PMEMORYMODULE hModule)
 	);
 #else
     PIMAGE_TLS_DIRECTORY v_tls_dir = NULL;
-    PIMAGE_DATA_DIRECTORY v_dir = GET_HEADER_DICTIONARY(hModule, IMAGE_DIRECTORY_ENTRY_TLS);
+    PIMAGE_DATA_DIRECTORY v_dir = GET_HEADER_DICTIONARY(pModule, IMAGE_DIRECTORY_ENTRY_TLS);
     if (v_dir->VirtualAddress != 0) {
         v_tls_dir = (PIMAGE_TLS_DIRECTORY) (codeBase + v_dir->VirtualAddress);
     }
 #endif
-    SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): v_tls_dir=0x%08x", hModule, v_tls_dir);
+    SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): v_tls_dir=0x%08x", pModule, v_tls_dir);
     if(v_tls_dir)
 	{
 		assert(v_tls_dir->AddressOfIndex);
