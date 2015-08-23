@@ -33,6 +33,8 @@ QMAKE_LIBS += -luser32
 QMAKE_LIBS += -ldbghelp
 QMAKE_LIBS += -lpsapi
 
+LIBS += -LE:\testbed -ltlsdll
+
 message(Qt version: $$[QT_VERSION])
 message(Qt is installed in $$[QT_INSTALL_PREFIX])
 message()

@@ -13,6 +13,45 @@
 #define SBOX_DBG(format, ...) (void)0
 #endif
 
+static HCUSTOMMODULE l_mydll = 0;
+
+HCUSTOMMODULE SBOX_LoadLibrary(LPCSTR filename, void *userdata)
+{
+    Q_UNUSED(userdata);
+    QString v_filename = filename;
+    qDebug() << "[_LoadLibrary()]" << v_filename;
+    if(v_filename.toLower() == "tlsdll.dll")
+    {
+        QFile v_file("E:/testbed/tlsdll.dll");
+        if(!v_file.open(QIODevice::ReadOnly)) return NULL;
+        QByteArray v_bytes = v_file.readAll();
+        HMEMORYMODULE handle = MemoryLoadLibraryEx(v_bytes.constData(), SBOX_LoadLibrary, SBOX_GetProcAddress, SBOX_FreeLibrary, NULL);
+        l_mydll = (HCUSTOMMODULE)handle;
+        return l_mydll;
+    }
+    HMODULE result = LoadLibraryA(filename);
+    if (result == NULL) {
+        return NULL;
+    }
+    return (HCUSTOMMODULE) result;
+}
+
+FARPROC SBOX_GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata)
+{
+    Q_UNUSED(userdata);
+    if(module==l_mydll)
+    {
+        return MemoryGetProcAddress(module, name);
+    }
+    return (FARPROC) GetProcAddress((HMODULE) module, name);
+}
+
+void SBOX_FreeLibrary(HCUSTOMMODULE module, void *userdata)
+{
+    Q_UNUSED(userdata);
+    FreeLibrary((HMODULE) module);
+}
+
 /*
     typedef struct _IMAGE_TLS_DIRECTORY32 {
       DWORD StartAddressOfRawData;

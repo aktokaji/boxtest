@@ -93,38 +93,6 @@ extern "C" static LPWSTR __stdcall _GetCommandLineW(VOID)
 }
 #endif
 
-static HCUSTOMMODULE _LoadLibrary(LPCSTR filename, void *userdata)
-{
-    Q_UNUSED(userdata);
-    HMODULE result = LoadLibraryA(filename);
-    if (result == NULL) {
-        return NULL;
-    }
-
-    return (HCUSTOMMODULE) result;
-}
-
-static FARPROC _GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata)
-{
-    Q_UNUSED(userdata);
-#if 0x0
-    QString v_name = name;
-    if(v_name=="GetCommandLineW")
-    {
-        //GetCommandLineW();
-        qDebug() << "[_GetProcAddress]" << (const char *)name << QString::fromStdWString(WineGetModuleFileName((HMODULE)module));
-        return (FARPROC)_GetCommandLineW;
-    }
-#endif
-    return (FARPROC) GetProcAddress((HMODULE) module, name);
-}
-
-static void _FreeLibrary(HCUSTOMMODULE module, void *userdata)
-{
-    Q_UNUSED(userdata);
-    FreeLibrary((HMODULE) module);
-}
-
 int RunFromMemory(const QString &fileName)
 {
 	FILE *fp;
@@ -148,7 +116,7 @@ int RunFromMemory(const QString &fileName)
 #if 0x0
 	handle = MemoryLoadLibrary(data);
 #else
-    handle = MemoryLoadLibraryEx(data, _LoadLibrary, _GetProcAddress, _FreeLibrary, NULL);
+    handle = MemoryLoadLibraryEx(data, SBOX_LoadLibrary, SBOX_GetProcAddress, SBOX_FreeLibrary, NULL);
 #endif
 	if (handle == NULL)
 	{

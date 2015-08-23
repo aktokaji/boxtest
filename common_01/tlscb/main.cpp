@@ -2,23 +2,16 @@
 #include <assert.h>
 
 #include <windows.h>
-//#include "win32.h"
 #include "win32_print.h"
-//#include "win32_vector.h"
 #include "vardecl.h"
-
-//#include "MemoryModule.h"
-
-//#include "sbox.h"
-//#include "wine.h"
-
-#include <tchar.h>
 
 #include <QtCore>
 #include <QtGlobal>
 
 #include <iostream>
 #include <thread>
+
+#include "tlsdll/tlsdll.h"
 
 #ifdef _DEBUG
 #define DBG(format, ...) win32_printfA("[TLSCB(A)] " format "\n", ## __VA_ARGS__)
@@ -101,6 +94,8 @@ int main(int argc, char *argv[])
     qDebug() << "[main(1)]" << args.size() << args;
 
     qDebug() << "[main(start)]: tv_int++" << tv_int++;
+
+    qDebug() << test_add(11, 22);
 
     win32_printfA("A:args[0]=%s\n", args[0].toLatin1().constData());
     printf("B:args[0]=%s\n", args[0].toLatin1().constData());

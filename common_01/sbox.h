@@ -64,6 +64,11 @@ public:
     void alloc_main_thread();
 };
 extern SBOX_PROCESS *g_sbox_process;
+
+HCUSTOMMODULE SBOX_LoadLibrary(LPCSTR filename, void *userdata);
+FARPROC SBOX_GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata);
+void SBOX_FreeLibrary(HCUSTOMMODULE module, void *userdata);
+
 #endif /* __cplusplus */
 
 #endif /* _SBOX_H_ */
