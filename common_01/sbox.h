@@ -5,6 +5,7 @@
 #include "wine.h"
 #include "win32_print.h"
 #include "vardecl.h"
+#include "MemoryModule.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,7 +19,8 @@ typedef void (NTAPI *SBOX_TLS_CALLBACK_PROC)(PVOID hModule, DWORD dwReason, PVOI
 class SBOX_MODULE
 {
 public:
-	HMODULE f_hmodule = NULL;
+    //HMODULE f_hmodule = NULL;
+    PMEMORYMODULE f_hmodule = NULL;
 	PIMAGE_TLS_DIRECTORY f_tls_dir = NULL;
 	LONG f_tls_index = -1;
 	std::vector<BYTE> f_tls_raw_data;
@@ -55,8 +57,9 @@ public:
 	std::vector<SBOX_MODULE> f_sbox_module_list;
 	explicit SBOX_PROCESS();
 	virtual ~SBOX_PROCESS();
-	bool register_module(HMODULE hModule);
-	void alloc_main_thread();
+    //bool register_module(HMODULE hModule);
+    bool register_module(PMEMORYMODULE hModule);
+    void alloc_main_thread();
 };
 extern SBOX_PROCESS *g_sbox_process;
 #endif /* __cplusplus */

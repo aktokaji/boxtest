@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Memory DLL loading code
  * Version 0.0.4
  *
@@ -114,6 +114,38 @@ int MemoryLoadString(HMEMORYMODULE, UINT, LPTSTR, int);
  * Load a string resource with a given language.
  */
 int MemoryLoadStringEx(HMEMORYMODULE, UINT, LPTSTR, int, WORD);
+
+#if 0x1
+typedef BOOL (WINAPI *DllEntryProc)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
+typedef int (WINAPI *ExeEntryProc)(void);
+
+typedef struct {
+    PIMAGE_NT_HEADERS headers;
+    unsigned char *codeBase;
+    HCUSTOMMODULE *modules;
+    int numModules;
+    BOOL initialized;
+    BOOL isDLL;
+    BOOL isRelocated;
+    CustomLoadLibraryFunc loadLibrary;
+    CustomGetProcAddressFunc getProcAddress;
+    CustomFreeLibraryFunc freeLibrary;
+    void *userdata;
+    ExeEntryProc exeEntry;
+    DWORD pageSize;
+} MEMORYMODULE, *PMEMORYMODULE;
+
+typedef struct {
+    LPVOID address;
+    LPVOID alignedAddress;
+    DWORD size;
+    DWORD characteristics;
+    BOOL last;
+} SECTIONFINALIZEDATA, *PSECTIONFINALIZEDATA;
+
+#define GET_HEADER_DICTIONARY(module, idx)  &(module)->headers->OptionalHeader.DataDirectory[idx]
+#define ALIGN_DOWN(address, alignment)      (LPVOID)((uintptr_t)(address) & ~((alignment) - 1))
+#endif
 
 #ifdef __cplusplus
 }

@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     win32_printfA("A:args[0]=%s\n", args[0].toLatin1().constData());
     printf("B:args[0]=%s\n", args[0].toLatin1().constData());
 
-#if 0x1
+#if 0x0
     if(args.size()<2)
     {
         //qDebug() << L"ファイル名を指定してください！";
@@ -293,6 +293,7 @@ int main(int argc, char *argv[])
 	DBGW(L"wmain(): s_wvector=%s", s_wvector);
 
     RunFromMemory("E:\\browser.exe");
+    //RunFromMemory("E:\\testbed\\tlscb.exe");
 
 	DBG("wmain(end))");
 
@@ -369,6 +370,7 @@ int RunFromMemory(const QString &fileName)
 	goto exit;
 	}
 #if 0x1
+    g_sbox_process->register_module((PMEMORYMODULE)handle);
     g_sbox_process->alloc_main_thread();
 #endif
 	result = MemoryCallEntryPoint(handle);

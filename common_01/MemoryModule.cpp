@@ -46,6 +46,7 @@
 
 #include <QtCore>
 
+#if 0x0
 typedef BOOL (WINAPI *DllEntryProc)(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
 typedef int (WINAPI *ExeEntryProc)(void);
 
@@ -75,6 +76,7 @@ typedef struct {
 
 #define GET_HEADER_DICTIONARY(module, idx)  &(module)->headers->OptionalHeader.DataDirectory[idx]
 #define ALIGN_DOWN(address, alignment)      (LPVOID)((uintptr_t)(address) & ~((alignment) - 1))
+#endif
 
 #ifdef DEBUG_OUTPUT
 static void

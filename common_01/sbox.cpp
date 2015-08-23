@@ -61,16 +61,18 @@ SBOX_PROCESS::~SBOX_PROCESS()
 	}
 	SBOX_DBG("SBOX_PROCESS deleted: 0x%08x (IMPLICIT_TLS=%u)", f_teb, f_num_implicit_tls);
 }
-bool SBOX_PROCESS::register_module(HMODULE hModule)
+//bool SBOX_PROCESS::register_module(HMODULE hModule)
+bool SBOX_PROCESS::register_module(PMEMORYMODULE hModule)
 {
-	assert(sizeof(hModule)==4);
+    unsigned char *codeBase = hModule->codeBase;
+    assert(sizeof(hModule)==4);
 	SBOX_DBG("SBOX_PROCESS::register_module(0x%08x)", hModule);
-	PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)hModule;
+    PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)codeBase;
 	if(pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
 		SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): DOS Signature invalid", hModule);
 		return false;
 	}
-	PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)(((DWORD)hModule) + pDosHeader->e_lfanew);
+    PIMAGE_NT_HEADERS pNtHeaders = (PIMAGE_NT_HEADERS)(((DWORD)codeBase) + pDosHeader->e_lfanew);
 	if(pNtHeaders->Signature != IMAGE_NT_SIGNATURE) {
 		SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): NT Signature mismatch", hModule);
 		return false;
@@ -78,6 +80,7 @@ bool SBOX_PROCESS::register_module(HMODULE hModule)
 	//std::list<SBOX_MODULE> f_sbox_module_list;
 	SBOX_MODULE v_sbox_module;
 	v_sbox_module.f_hmodule = hModule;
+#if 0x0
 	ULONG v_tls_dir_size;
 	PIMAGE_TLS_DIRECTORY v_tls_dir = (PIMAGE_TLS_DIRECTORY)ImageDirectoryEntryToData(
 		(PVOID)hModule,
@@ -85,7 +88,15 @@ bool SBOX_PROCESS::register_module(HMODULE hModule)
 		IMAGE_DIRECTORY_ENTRY_TLS,
 		&v_tls_dir_size
 	);
-	if(v_tls_dir)
+#else
+    PIMAGE_TLS_DIRECTORY v_tls_dir = NULL;
+    PIMAGE_DATA_DIRECTORY v_dir = GET_HEADER_DICTIONARY(hModule, IMAGE_DIRECTORY_ENTRY_TLS);
+    if (v_dir->VirtualAddress != 0) {
+        v_tls_dir = (PIMAGE_TLS_DIRECTORY) (codeBase + v_dir->VirtualAddress);
+    }
+#endif
+    SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): v_tls_dir=0x%08x", hModule, v_tls_dir);
+    if(v_tls_dir)
 	{
 		assert(v_tls_dir->AddressOfIndex);
 		v_sbox_module.f_tls_dir = v_tls_dir;
@@ -165,9 +176,10 @@ SBOX_THREAD::SBOX_THREAD()
 	}
 	f_teb->ThreadLocalStoragePointer = f_sbox_tlsp;
 	SBOX_DBG("SBOX_THREAD: f_sbox_tlsp=0x%08x", f_sbox_tlsp);
-	for(size_t i=0; i<g_sbox_process->f_sbox_module_list.size(); i++)
+    SBOX_DBG("SBOX_THREAD: g_sbox_process->f_sbox_module_list.size()=%u", g_sbox_process->f_sbox_module_list.size());
+    for(size_t i=0; i<g_sbox_process->f_sbox_module_list.size(); i++)
 	{
-		//SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u]", i);
+        SBOX_DBG("SBOX_THREAD: prepare? for g_sbox_process->f_sbox_module_list[%u]", i);
 		SBOX_MODULE &v_sbox_module = g_sbox_process->f_sbox_module_list[i];
 		if(v_sbox_module.f_tls_index >= 0)
 		{
@@ -179,7 +191,7 @@ SBOX_THREAD::SBOX_THREAD()
 			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](C)", i);
 			memcpy(v_tls_raw_data, &v_sbox_module.f_tls_raw_data[0], v_sbox_module.f_tls_raw_data.size());
 			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](D)", i);
-#if 0x0 // FIXME: Testing
+#if 0x1 // FIXME: Testing
 			size_t v_tls_raw_data_size = v_sbox_module.f_tls_dir->EndAddressOfRawData - v_sbox_module.f_tls_dir->StartAddressOfRawData;
 			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](D.1)", i);
 			assert(v_tls_raw_data_size <= v_sbox_module.f_tls_raw_data.size());
