@@ -32,4 +32,5 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL,DWORD fdwReason,LPVOID lpvReserved)
             break;
     }
     return  TRUE;
+    //return  FALSE;
 }

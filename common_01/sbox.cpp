@@ -7,7 +7,8 @@
 
 #include "MemoryModule.cpp"
 
-#ifdef _DEBUG
+//#ifdef _DEBUG
+#if 0x1
 #define SBOX_DBG(format, ...) win32_printfA("[SBOX] " format "\n", ## __VA_ARGS__)
 #else
 #define SBOX_DBG(format, ...) (void)0
@@ -27,6 +28,8 @@ HCUSTOMMODULE SBOX_LoadLibrary(LPCSTR filename, void *userdata)
         QByteArray v_bytes = v_file.readAll();
         HMEMORYMODULE handle = MemoryLoadLibraryEx(v_bytes.constData(), SBOX_LoadLibrary, SBOX_GetProcAddress, SBOX_FreeLibrary, NULL);
         l_mydll = (HCUSTOMMODULE)handle;
+        QFileInfo fi(v_filename);
+        g_sbox_process->register_module(l_mydll, fi.fileName());
         return l_mydll;
     }
     HMODULE result = LoadLibraryA(filename);
@@ -95,11 +98,13 @@ SBOX_PROCESS::~SBOX_PROCESS()
 	SBOX_DBG("SBOX_PROCESS deleted: 0x%08x (IMPLICIT_TLS=%u)", f_teb, f_num_implicit_tls);
 }
 //bool SBOX_PROCESS::register_module(HMODULE hModule)
-bool SBOX_PROCESS::register_module(HMEMORYMODULE hModule)
+bool SBOX_PROCESS::register_module(HMEMORYMODULE hModule, const QString &baseName)
 {
+    SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): %s", hModule, baseName.toLocal8Bit().constData());
     PMEMORYMODULE pModule = (PMEMORYMODULE)hModule;
     unsigned char *codeBase = pModule->codeBase;
     assert(sizeof(pModule)==4);
+#if 0x0
     SBOX_DBG("SBOX_PROCESS::register_module(0x%08x)", pModule);
     PIMAGE_DOS_HEADER pDosHeader = (PIMAGE_DOS_HEADER)codeBase;
 	if(pDosHeader->e_magic != IMAGE_DOS_SIGNATURE) {
@@ -112,23 +117,24 @@ bool SBOX_PROCESS::register_module(HMEMORYMODULE hModule)
 		return false;
 	}
 	//std::list<SBOX_MODULE> f_sbox_module_list;
+#endif
 	SBOX_MODULE v_sbox_module;
     v_sbox_module.f_hmodule = pModule;
-#if 0x0
-	ULONG v_tls_dir_size;
-	PIMAGE_TLS_DIRECTORY v_tls_dir = (PIMAGE_TLS_DIRECTORY)ImageDirectoryEntryToData(
-		(PVOID)hModule,
-		TRUE,
-		IMAGE_DIRECTORY_ENTRY_TLS,
-		&v_tls_dir_size
-	);
-#else
+    v_sbox_module.f_basename = baseName;
+#if 0x1
+    v_sbox_module.f_is_dll = pModule->isDLL;
+    if (pModule->headers->OptionalHeader.AddressOfEntryPoint != 0) {
+        v_sbox_module.f_main_addr = (FARPROC) (codeBase + pModule->headers->OptionalHeader.AddressOfEntryPoint);
+    } else {
+        v_sbox_module.f_main_addr = NULL;
+    }
+    SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): %s is_dll=%i main_addr=0x%08x", hModule, baseName.toLocal8Bit().constData(), v_sbox_module.f_is_dll, v_sbox_module.f_main_addr);
+#endif
     PIMAGE_TLS_DIRECTORY v_tls_dir = NULL;
     PIMAGE_DATA_DIRECTORY v_dir = GET_HEADER_DICTIONARY(pModule, IMAGE_DIRECTORY_ENTRY_TLS);
     if (v_dir->VirtualAddress != 0) {
         v_tls_dir = (PIMAGE_TLS_DIRECTORY) (codeBase + v_dir->VirtualAddress);
     }
-#endif
     SBOX_DBG("SBOX_PROCESS::register_module(0x%08x): v_tls_dir=0x%08x", pModule, v_tls_dir);
     if(v_tls_dir)
 	{
@@ -215,7 +221,25 @@ SBOX_THREAD::SBOX_THREAD()
 	{
         SBOX_DBG("SBOX_THREAD: prepare? for g_sbox_process->f_sbox_module_list[%u]", i);
 		SBOX_MODULE &v_sbox_module = g_sbox_process->f_sbox_module_list[i];
-		if(v_sbox_module.f_tls_index >= 0)
+        /* DllMain() */
+        SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](G): name=%s is_dll=%d main_addr=0x%08x", i, v_sbox_module.f_basename.toLocal8Bit().constData(), v_sbox_module.f_is_dll, v_sbox_module.f_main_addr);
+        if(v_sbox_module.f_is_dll && v_sbox_module.f_main_addr)
+        {
+            SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](H): name=%s is_dll=%d main_addr=0x%08x", i, v_sbox_module.f_basename.toLocal8Bit().constData(), v_sbox_module.f_is_dll, v_sbox_module.f_main_addr);
+            PMEMORYMODULE pModule = (PMEMORYMODULE)v_sbox_module.f_hmodule;
+            unsigned char *codeBase = pModule->codeBase;
+            DllEntryProc DllEntry = (DllEntryProc) v_sbox_module.f_main_addr;
+            BOOL successfull = FALSE;
+            if(f_is_root)
+            {
+                successfull = (*DllEntry)((HINSTANCE)codeBase, DLL_PROCESS_ATTACH, 0);
+            }
+            else
+            {
+                successfull = (*DllEntry)((HINSTANCE)codeBase, DLL_THREAD_ATTACH, 0);
+            }
+        }
+        if(v_sbox_module.f_tls_index >= 0)
 		{
 			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](A)", i);
 			PVOID v_tls_raw_data = _aligned_malloc(v_sbox_module.f_tls_raw_data.size(), 16);
@@ -225,37 +249,24 @@ SBOX_THREAD::SBOX_THREAD()
 			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](C)", i);
 			memcpy(v_tls_raw_data, &v_sbox_module.f_tls_raw_data[0], v_sbox_module.f_tls_raw_data.size());
 			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](D)", i);
-#if 0x1 // FIXME: Testing
-			size_t v_tls_raw_data_size = v_sbox_module.f_tls_dir->EndAddressOfRawData - v_sbox_module.f_tls_dir->StartAddressOfRawData;
-			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](D.1)", i);
-			assert(v_tls_raw_data_size <= v_sbox_module.f_tls_raw_data.size());
-			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](D.2)", i);
-			memcpy(v_tls_raw_data, (void *)v_sbox_module.f_tls_dir->StartAddressOfRawData, v_tls_raw_data_size);
-			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](D.3)", i);
-#endif
 			assert(sizeof(v_tls_raw_data)==sizeof(DWORD));
 			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](E)v_sbox_module.f_tls_index=%d", i, v_sbox_module.f_tls_index);
 			((DWORD *)f_teb->ThreadLocalStoragePointer)[v_sbox_module.f_tls_index] = (DWORD)v_tls_raw_data;
 			SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](F)", i);
-			//if(!f_is_root)
-			{
-				for(size_t i_callback=0; i_callback<v_sbox_module.f_tls_callback_list.size(); i_callback++)
-				{
-					SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](G) i_callback=%u", i, i_callback);
-					if(f_is_root)
-					{
-						v_sbox_module.f_tls_callback_list[i_callback]((PVOID)g_sbox_process->f_hmodule, DLL_PROCESS_ATTACH, 0);
-						//v_sbox_module.f_tls_callback_list[i_callback]((PVOID)v_sbox_module.f_hmodule, DLL_PROCESS_ATTACH, 0);
-					}
-					else
-					{
-						v_sbox_module.f_tls_callback_list[i_callback]((PVOID)g_sbox_process->f_hmodule, DLL_THREAD_ATTACH, 0);
-						//v_sbox_module.f_tls_callback_list[i_callback]((PVOID)v_sbox_module.f_hmodule, DLL_THREAD_ATTACH, 0);
-					}
-				}
-			}
-		}
-	}
+            for(size_t i_callback=0; i_callback<v_sbox_module.f_tls_callback_list.size(); i_callback++)
+            {
+                //SBOX_DBG("SBOX_THREAD: prepare for g_sbox_process->f_sbox_module_list[%u](G) i_callback=%u", i, i_callback);
+                if(f_is_root)
+                {
+                    v_sbox_module.f_tls_callback_list[i_callback]((PVOID)g_sbox_process->f_hmodule, DLL_PROCESS_ATTACH, 0);
+                }
+                else
+                {
+                    v_sbox_module.f_tls_callback_list[i_callback]((PVOID)g_sbox_process->f_hmodule, DLL_THREAD_ATTACH, 0);
+                }
+            }
+        }
+    }
 	//SBOX_DBG("SBOX_THREAD created: 0x%08x ORIG_TLSP=0x%08x SBOX_TLSP=0x%08x%s", f_teb, f_orig_tlsp, f_sbox_tlsp, f_is_root?" (ROOT)":"");
 	SBOX_DBG("SBOX_THREAD created: 0x%08x%s", f_teb, f_is_root?" (ROOT)":"");
 }
@@ -267,7 +278,23 @@ SBOX_THREAD::~SBOX_THREAD()
 	{
 		//SBOX_DBG("~SBOX_THREAD: unprepare for g_sbox_process->f_sbox_module_list[%u]", i);
 		SBOX_MODULE &v_sbox_module = g_sbox_process->f_sbox_module_list[i];
-		if(v_sbox_module.f_tls_index >= 0)
+        if(v_sbox_module.f_is_dll && v_sbox_module.f_main_addr)
+        {
+            SBOX_DBG("~SBOX_THREAD: unprepare for g_sbox_process->f_sbox_module_list[%u](H): name=%s is_dll=%d main_addr=0x%08x", i, v_sbox_module.f_basename.toLocal8Bit().constData(), v_sbox_module.f_is_dll, v_sbox_module.f_main_addr);
+            PMEMORYMODULE pModule = (PMEMORYMODULE)v_sbox_module.f_hmodule;
+            unsigned char *codeBase = pModule->codeBase;
+            DllEntryProc DllEntry = (DllEntryProc) v_sbox_module.f_main_addr;
+            BOOL successfull = FALSE;
+            if(f_is_root)
+            {
+                successfull = (*DllEntry)((HINSTANCE)codeBase, DLL_PROCESS_DETACH, 0);
+            }
+            else
+            {
+                successfull = (*DllEntry)((HINSTANCE)codeBase, DLL_THREAD_DETACH, 0);
+            }
+        }
+        if(v_sbox_module.f_tls_index >= 0)
 		{
 			//if(!f_is_root)
 			//{

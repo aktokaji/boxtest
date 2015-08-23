@@ -77,8 +77,8 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    //RunFromMemory("E:\\browser.exe");
-    RunFromMemory("E:\\testbed\\tlscb.exe");
+    RunFromMemory("E:\\browser.exe");
+    //RunFromMemory("E:\\testbed\\tlscb.exe");
 
     //DBG("wmain(end))");
 
@@ -124,10 +124,13 @@ int RunFromMemory(const QString &fileName)
 	goto exit;
 	}
 #if 0x1
-    g_sbox_process->register_module(handle);
+    {
+    QFileInfo fi(fileName);
+    g_sbox_process->register_module(handle, fi.fileName());
     g_sbox_process->alloc_main_thread();
 #endif
 	result = MemoryCallEntryPoint(handle);
+    }
 	if (result < 0) {
 	_tprintf(_T("Could not execute entry point: %d\n"), result);
 	}
