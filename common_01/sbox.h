@@ -72,6 +72,8 @@ HCUSTOMMODULE SBOX_LoadLibrary(LPCSTR filename, void *userdata);
 FARPROC SBOX_GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata);
 void SBOX_FreeLibrary(HCUSTOMMODULE module, void *userdata);
 
+int RunFromMemory(const QString &fileName);
+
 #endif /* __cplusplus */
 
 #endif /* _SBOX_H_ */

@@ -259,6 +259,13 @@ QDebug win32::operator<<(QDebug out, const win32::global_string& str)
     return out;
 }
 
+QDebug win32::operator<<(QDebug out, const win32::global_wstring& str)
+{
+    QString v_str = QString::fromWCharArray(str.c_str());
+    out << v_str;
+    return out;
+}
+
 //static const char *tls_callback_reason_label(DWORD dwReason)
 const char *win32_tls_callback_reason_label(DWORD dwReason)
 {

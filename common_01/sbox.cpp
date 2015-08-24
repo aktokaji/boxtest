@@ -55,6 +55,35 @@ void SBOX_FreeLibrary(HCUSTOMMODULE module, void *userdata)
     FreeLibrary((HMODULE) module);
 }
 
+int RunFromMemory(const QString &fileName)
+{
+    //unsigned char *data=NULL;
+    int result = -1;
+    QFile v_file(fileName);
+    if(!v_file.open(QIODevice::ReadOnly)) return result;
+    QByteArray v_bytes = v_file.readAll();
+    HMEMORYMODULE handle = MemoryLoadLibraryEx(v_bytes.constData(), SBOX_LoadLibrary, SBOX_GetProcAddress, SBOX_FreeLibrary, NULL);
+    if (handle == NULL)
+    {
+        qDebug().noquote() << "Can't load library from memory.";
+        goto exit;
+    }
+    {
+    QFileInfo fi(fileName);
+    g_sbox_process->register_module(handle, fi.fileName());
+    g_sbox_process->alloc_main_thread();
+    result = MemoryCallEntryPoint(handle);
+    }
+    if (result < 0) {
+        qDebug().noquote() << "Could not execute entry point: " << result;
+    }
+    MemoryFreeLibrary(handle);
+    exit:
+    //if (data)
+    //free(data);
+    return result;
+}
+
 /*
     typedef struct _IMAGE_TLS_DIRECTORY32 {
       DWORD StartAddressOfRawData;

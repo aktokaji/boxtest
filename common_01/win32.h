@@ -76,7 +76,8 @@ namespace win32
 	typedef std::basic_string< wchar_t, std::char_traits<wchar_t>, global_allocator<wchar_t> > global_wstring;
 	template<typename T> class global_vector : public std::vector< T, global_allocator<T> > { };
     QDebug operator<<(QDebug out, const global_string& str);
-};
+    QDebug operator<<(QDebug out, const global_wstring& str);
+}
 #endif /* __cplusplus */
 
 #endif /* _WIN32_H_ */
