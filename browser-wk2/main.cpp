@@ -33,6 +33,7 @@
 
 #include "browserapplication.h"
 #include <QtCore>
+////#include <windows.h>
 
 quint16 g_localPort = 8080;
 
@@ -40,6 +41,7 @@ int main(int argc, char **argv)
 {
     Q_INIT_RESOURCE(data);
     BrowserApplication application(argc, argv);
+    ////::MessageBoxA(NULL,"","",MB_OK);
     if (!application.isTheOnlyBrowser() || !application.isCorrectlyInitialized())
         return 0;
     QProcess v_php_proc;

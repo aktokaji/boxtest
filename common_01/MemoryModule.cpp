@@ -273,6 +273,9 @@ FinalizeSections(PMEMORYMODULE module)
 static BOOL
 ExecuteTLS(PMEMORYMODULE module)
 {
+#if 0x1
+    Q_UNUSED(module);
+#else
     unsigned char *codeBase = module->codeBase;
 
     PIMAGE_DATA_DIRECTORY directory = GET_HEADER_DICTIONARY(module, IMAGE_DIRECTORY_ENTRY_TLS);
@@ -288,6 +291,7 @@ ExecuteTLS(PMEMORYMODULE module)
             callback++;
         }
     }
+#endif
     return TRUE;
 }
 

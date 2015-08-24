@@ -5,6 +5,7 @@
 
 #include <QtCore>
 #include <QtGlobal>
+#include <QtScript>
 #include <iostream>
 
 //#include "win32_print.h"
@@ -16,24 +17,89 @@
 //#define DBGW(format, ...) (void)0;
 //#endif
 
+class MyLoader : public QObject
+{
+    Q_OBJECT
+public:
+    MyLoader();
+public slots:
+    int calculate(int value) const;
+    void addLoadPath(const QString &path)
+    {
+        qDebug().noquote() << "[addLoadPath()]" << path;
+        this->loadPathList.append(path);
+    }
+public:
+    QList<QDir> loadPathList;
+};
+
+MyLoader::MyLoader()
+{
+}
+
+int MyLoader::calculate(int value) const
+{
+    int total = 0;
+    for (int i = 0; i <= value; ++i)
+        total += i;
+    return total;
+}
+
+static
+QStringList myArgList()
+{
+    QStringList result;
+    LPWSTR cmdLine = GetCommandLineW();
+    int numArgs = 0;
+    LPWSTR *args = CommandLineToArgvW(cmdLine, &numArgs);
+    for(int i=0; i<numArgs; i++)
+    {
+        result << QString::fromWCharArray(args[i]);
+    }
+    return result;
+}
+
+static
 void myMsgHandler(QtMsgType, const QMessageLogContext &, const QString &msg)
 {
+    OutputDebugStringW(L"[DEBUG] ");
     OutputDebugStringW(msg.toStdWString().c_str());
     OutputDebugStringW(L"\n");
-    std::cout << msg.toLocal8Bit().constData() << std::endl;
+    //std::cout << msg.toLocal8Bit().constData() << std::endl;
 }
 
 //int wmain(int argc, wchar_t *argv[])
 int main(int argc, char *argv[])
+//int main(int, char *[])
 {
-    QCoreApplication app(argc, argv);
     qInstallMessageHandler(myMsgHandler);
+    MyLoader loader;
+    {
+        QCoreApplication app(argc, argv);
+        Q_INIT_RESOURCE(main);
+        QFile scriptFile(":/main.qs");
+        scriptFile.open(QIODevice::ReadOnly);
+        QByteArray scriptBytes = scriptFile.readAll();
+        qDebug().noquote() << "[scriptBytes]" << scriptBytes;
 
-    QStringList args = app.arguments();
+        QScriptEngine engine;
+        QObject *someObject = &loader;
+        QScriptValue objectValue = engine.newQObject(someObject);
+        engine.globalObject().setProperty("loader", objectValue);
 
-    qDebug() << "[main(1)]" << args.size() << args;
+        qDebug() << "myObject's calculate() function returns"
+                 << engine.evaluate("loader.calculate(10)").toNumber();
+        engine.evaluate(QString::fromUtf8(scriptBytes));
+    }
 
-    qDebug().noquote() << L"漢字テスト";
+    //QStringList args = app.arguments();
+
+    //qDebug() << "[main(1)]" << args.size() << args;
+
+    qDebug().noquote() << QString::fromWCharArray(L"漢字テスト");
+
+    QStringList args = myArgList();
+    qDebug().noquote() << args;
 
     //win32_printfA("A:args[0]=%s\n", args[0].toLatin1().constData());
     //printf("B:args[0]=%s\n", args[0].toLatin1().constData());
@@ -55,8 +121,52 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    RunFromMemory("E:\\browser.exe");
+    for(int i=0; i<loader.loadPathList.size(); i++)
+    {
+        QDir dir = loader.loadPathList[i];
+        // 対象のファイル名フィルタ
+        QStringList nameFilters;
+        nameFilters << "*.dll";
+        // ファイルフィルタ
+        //QDir::Filters filters = QDir::Files | QDir::Dirs | QDir::Hidden;
+        QDir::Filters filters = QDir::Files | QDir::Hidden;
+        // 対象フラグ
+        QDirIterator::IteratorFlags flags = QDirIterator::NoIteratorFlags;
+        // サブディレクトリを探索するかどうか
+        bool canSerchSubDir= true;
+        if(canSerchSubDir)
+        {
+            flags = QDirIterator::Subdirectories;
+        }
+        // イテレーターの生成
+        QDirIterator it(dir.absolutePath(), nameFilters, filters, flags);
+        QStringList files;
+        while (it.hasNext())
+        {
+            QString file = it.next();
+            if(file.endsWith("/.")) continue;
+            if(file.endsWith("/..")) continue;
+            //qDebug().noquote() << dir.relativeFilePath(file) << file;
+#if 0x1
+            g_sbox_process->register_dll_location(file);
+#else
+            QFileInfo fi(file);
+            if(fi.fileName().toLower().startsWith("qt5webkit"))
+            {
+                g_sbox_process->register_dll_location(file);
+            }
+#endif
+            files << file;
+        }
+    }
+    //QString dirPath = QString::fromWCharArray(L"E:/testbed/圧縮テスト");
+    //QDir dir(dirPath);
+
+    //RunFromMemory("E:\\browser.exe");
     //RunFromMemory("E:\\testbed\\tlscb.exe");
+    //RunFromMemory("E:\\testbed\\browser-wk2.exe");
+    RunFromMemory("E:\\testbed\\browser486.exe");
+
 
     //DBG("wmain(end))");
     qDebug().noquote() << "main(restored)";
@@ -72,3 +182,4 @@ extern "C" static LPWSTR __stdcall _GetCommandLineW(VOID)
 }
 #endif
 
+#include "main.moc"

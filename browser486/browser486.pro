@@ -1,11 +1,26 @@
 TEMPLATE = app
-#TARGET = browser
-QT += webkitwidgets network widgets printsupport
+TARGET = browser486
+QT += webkit network
 
-qtHaveModule(uitools):!embedded: QT += uitools
+CONFIG += qt warn_on
+contains(QT_BUILD_PARTS, tools):!embedded: CONFIG += uitools
 else: DEFINES += QT_NO_UITOOLS
 
 DESTDIR = E:\testbed
+
+msvc {
+  #QMAKE_LFLAGS -= /DYNAMICBASE /NXCOMPAT
+  #QMAKE_LFLAGS -= /NXCOMPAT
+  QMAKE_LFLAGS -= /DYNAMICBASE /NXCOMPAT
+  QMAKE_LFLAGS += /FIXED /BASE:0x66000000
+}
+gcc {
+  #QMAKE_LFLAGS += -Wl,--image-base=0x66000000
+  #QMAKE_LFLAGS += -Wl,--relocatable
+  #QMAKE_LFLAGS_RELEASE += -Wl,--relocatable
+}
+#QMAKE_LFLAGS += -Wl,--relocatable
+QMAKE_LFLAGS += -Wl,--image-base=0x66000000
 
 FORMS += \
     addbookmarkdialog.ui \
@@ -39,8 +54,7 @@ HEADERS += \
     toolbarsearch.h \
     urllineedit.h \
     webview.h \
-    xbel.h \
-    phpcgireply.h
+    xbel.h
 
 SOURCES += \
     autosaver.cpp \
@@ -63,8 +77,7 @@ SOURCES += \
     urllineedit.cpp \
     webview.cpp \
     xbel.cpp \
-    main.cpp \
-    phpcgireply.cpp
+    main.cpp
 
 RESOURCES += data/data.qrc htmls/htmls.qrc
 
@@ -97,11 +110,13 @@ wince*: {
     DEPLOYMENT_PLUGIN += qjpeg qgif
 }
 
-EXAMPLE_FILES = Info_mac.plist browser.icns browser.ico browser.rc
-
 # install
-target.path = $$[QT_INSTALL_EXAMPLES]/webkitwidgets/browser
-INSTALLS += target
+target.path = $$[QT_INSTALL_DEMOS]/browser
+sources.files = $$SOURCES $$HEADERS $$RESOURCES $$FORMS *.plist *.icns *.ico *.rc *.pro *.html *.doc images htmls data
+sources.path = $$[QT_INSTALL_DEMOS]/browser
+INSTALLS += target sources
 
-#QMAKE_PRE_LINK = taskkill /F /IM browser-wk.exe
-LIBS += -luser32
+symbian {
+    TARGET.UID3 = 0xA000CF70
+    include($$QT_SOURCE_TREE/demos/symbianpkgrules.pri)
+}

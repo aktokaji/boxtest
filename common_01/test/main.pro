@@ -1,9 +1,11 @@
 TEMPLATE = app
 TARGET = main
 #QT -= core gui
-QT += core
+QT += core script
 QT -= gui
-CONFIG += console
+#CONFIG += console
+
+DESTDIR = E:\testbed
 
 SOURCES += main.cpp ../win32.cpp ../win32_print.cpp ../win32_vector.cpp \
     ../sbox.cpp \
@@ -53,3 +55,6 @@ HEADERS += \
     ../win32_vector.h \
     ../wine.h \
     ../wine_teb.h
+
+RESOURCES += \
+    main.qrc

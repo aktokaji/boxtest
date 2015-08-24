@@ -60,9 +60,10 @@ public:
 	DWORD f_num_implicit_tls = 0;
 	DWORD f_num_extended_tls = 0;
 	std::vector<SBOX_MODULE> f_sbox_module_list;
+    QMap<QString, QString> f_dll_loc_map;
 	explicit SBOX_PROCESS();
 	virtual ~SBOX_PROCESS();
-    //bool register_module(HMODULE hModule);
+    bool register_dll_location(const QString &fullPath);
     bool register_module(HMEMORYMODULE hModule, const QString &baseName);
     void alloc_main_thread();
 };
