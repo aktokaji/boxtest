@@ -248,7 +248,7 @@ SBOX_PROCESS::SBOX_PROCESS()
 		}
 	}
 	f_num_implicit_tls = v_max_tls_index + 1;
-    f_num_extended_tls = 64; // FIXME
+    f_num_extended_tls = 256; // FIXME
     //f_num_extended_tls = 16; // FIXME
 	SBOX_DBG("SBOX_PROCESS created: 0x%08x (IMPLICIT_TLS=%u)", f_teb, f_num_implicit_tls);
 }
