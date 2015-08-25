@@ -11,6 +11,6 @@ if(true)
 {
     loader.setMainProgram("E:\\testbed\\browser486.exe");
     loader.addLoadPath("C:/Qt/4.8.6/bin");
-    //loader.addLoadPath("C:/Qt/4.8.6/plugins");
+    loader.addLoadPath("C:/Qt/4.8.6/plugins");
     //loader.addDebugModule("qgif4.dll");
 }

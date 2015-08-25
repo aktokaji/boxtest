@@ -30,11 +30,7 @@ public:
 	LONG f_tls_index = -1;
 	std::vector<BYTE> f_tls_raw_data;
 	std::vector<SBOX_TLS_CALLBACK_PROC> f_tls_callback_list;
-#if 0x0
-	DWORD StartAddressOfRawData;
-	DWORD SizeOfRawData;
-	DWORD SizeOfZeroFill;
-#endif
+    bool isAttached = false;
 };
 class SBOX_THREAD
 {
@@ -47,6 +43,7 @@ public:
 	bool f_is_root = false; 
 	explicit SBOX_THREAD();
 	virtual ~SBOX_THREAD();
+    int attach_explicit(bool as_process);
 };
 extern TLS_VARIABLE_DECL SBOX_THREAD *g_sbox_thread;
 class SBOX_PROCESS
@@ -62,11 +59,13 @@ public:
 	std::vector<SBOX_MODULE> f_sbox_module_list;
     QMap<QString, QString> f_dll_loc_map;
     QStringList f_debug_module_list;
+    QMap<PWINE_TEB, SBOX_THREAD *> f_thread_list;
 	explicit SBOX_PROCESS();
 	virtual ~SBOX_PROCESS();
     bool register_dll_location(const QString &fullPath);
     bool register_module(HMEMORYMODULE hModule, const QString &baseName);
     void alloc_main_thread();
+    void attach_after_load();
 protected:
     SBOX_MODULE *find_mdule_by_name(const QString &path);
     SBOX_MODULE *find_mdule_by_codebase(PVOID codeBase);
