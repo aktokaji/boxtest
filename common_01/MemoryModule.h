@@ -40,7 +40,11 @@ extern "C" {
 #endif
 
 typedef HCUSTOMMODULE (*CustomLoadLibraryFunc)(LPCSTR, void *);
+#if 0x0
 typedef FARPROC (*CustomGetProcAddressFunc)(HCUSTOMMODULE, LPCSTR, void *);
+#else
+typedef FARPROC (*CustomGetProcAddressFunc)(HCUSTOMMODULE, LPCSTR, void *, LPCSTR);
+#endif
 typedef void (*CustomFreeLibraryFunc)(HCUSTOMMODULE, void *);
 
 /**

@@ -61,16 +61,21 @@ public:
 	DWORD f_num_extended_tls = 0;
 	std::vector<SBOX_MODULE> f_sbox_module_list;
     QMap<QString, QString> f_dll_loc_map;
+    QStringList f_debug_module_list;
 	explicit SBOX_PROCESS();
 	virtual ~SBOX_PROCESS();
     bool register_dll_location(const QString &fullPath);
     bool register_module(HMEMORYMODULE hModule, const QString &baseName);
     void alloc_main_thread();
+protected:
+    SBOX_MODULE *find_mdule_by_name(const QString &path);
+    SBOX_MODULE *find_mdule_by_codebase(PVOID codeBase);
+    SBOX_MODULE *find_mdule_by_handle(HMEMORYMODULE handle);
 };
 extern SBOX_PROCESS *g_sbox_process;
 
 HCUSTOMMODULE SBOX_LoadLibrary(LPCSTR filename, void *userdata);
-FARPROC SBOX_GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata);
+FARPROC SBOX_GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata, LPCSTR from);
 void SBOX_FreeLibrary(HCUSTOMMODULE module, void *userdata);
 
 int RunFromMemory(const QString &fileName);

@@ -24,13 +24,23 @@ public:
     MyLoader();
 public slots:
     int calculate(int value) const;
+    void setMainProgram(const QString &path)
+    {
+        this->mainProgram = path;
+    }
     void addLoadPath(const QString &path)
     {
         qDebug().noquote() << "[addLoadPath()]" << path;
         this->loadPathList.append(path);
     }
+    void addDebugModule(const QString &path)
+    {
+        QFileInfo fi(path);
+        g_sbox_process->f_debug_module_list.append(fi.fileName().toLower());
+    }
 public:
     QList<QDir> loadPathList;
+    QString mainProgram;
 };
 
 MyLoader::MyLoader()
@@ -165,7 +175,8 @@ int main(int argc, char *argv[])
     //RunFromMemory("E:\\browser.exe");
     //RunFromMemory("E:\\testbed\\tlscb.exe");
     //RunFromMemory("E:\\testbed\\browser-wk2.exe");
-    RunFromMemory("E:\\testbed\\browser486.exe");
+    //RunFromMemory("E:\\testbed\\browser486.exe");
+    RunFromMemory(loader.mainProgram);
 
 
     //DBG("wmain(end))");

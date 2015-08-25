@@ -100,7 +100,9 @@ _LoadLibraryW(LPCWSTR lpLibFileName)
     //HMODULE hModule = LoadLibraryW(lpLibFileName);
     QString maybeFullpath = QString::fromWCharArray(lpLibFileName);
     QFileInfo fi(maybeFullpath);
-    HMODULE hModule = (HMODULE)SBOX_LoadLibrary(fi.fileName().toLocal8Bit().constData(), NULL);
+    QString fname = fi.fileName().toLower();
+    //HMODULE hModule = (HMODULE)SBOX_LoadLibrary(fi.fileName().toLocal8Bit().constData(), NULL);
+    HMODULE hModule = (HMODULE)SBOX_LoadLibrary(fi.fileName().toLocal8Bit().constData(), (void *)fname.toLocal8Bit().constData());
     qDebug() << "[_LoadLibraryW()]" << fi.fileName() << QString::fromWCharArray(lpLibFileName) << hModule;
     return hModule;
 }
@@ -110,17 +112,17 @@ FARPROC
 WINAPI
 My_GetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
-    qDebug() << "[My_GetProcAddress()]" << lpProcName;
+    //qDebug() << "[My_GetProcAddress()]" << lpProcName;
     //FARPROC proc = GetProcAddress(hModule, lpProcName);
-    FARPROC proc = SBOX_GetProcAddress((HCUSTOMMODULE)hModule, lpProcName, NULL);
-    qDebug() << "[My_GetProcAddress()]" << lpProcName << (void *)proc;
+    FARPROC proc = SBOX_GetProcAddress((HCUSTOMMODULE)hModule, lpProcName, NULL, "?");
+    //qDebug() << "[My_GetProcAddress()]" << lpProcName << (void *)proc;
     ////if(proc == NULL) exit(-1);
     return proc;
 }
 
-FARPROC SBOX_GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata)
+FARPROC SBOX_GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata, LPCSTR from)
 {
-    Q_UNUSED(userdata);
+    Q_UNUSED(userdata); Q_UNUSED(from);
     //qDebug() << "[SBOX_GetProcAddress()]" << module << name;
 #if 0x1
     for(size_t i=0; i<g_sbox_process->f_sbox_module_list.size(); i++)
@@ -134,6 +136,26 @@ FARPROC SBOX_GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata)
                 qDebug() << "exit!";
                 exit(-1);
             }
+            if(g_sbox_process->f_debug_module_list.contains(sbox_module.f_basename))
+            {
+                qDebug() << "[SBOX_GetProcAddress()]" << sbox_module.f_basename << module << name;
+            }
+#if 0x0
+            QFileInfo fi(from);
+            QString fname = fi.fileName().toLower();
+            if(false)//if(g_sbox_process->f_debug_module_list.contains(fname))
+            {
+                qDebug() << "[SBOX_GetProcAddress()] <from>" << fname << module << name;
+            }
+            //if(userdata)
+            {
+                QString userstr = (const char *)userdata;
+                //if(g_sbox_process->f_debug_module_list.contains(userstr))
+                {
+                    qDebug() << "[SBOX_GetProcAddress()] <from>(2)" << userstr << fname << module << name;
+                }
+            }
+#endif
             return MemoryGetProcAddress(sbox_module.f_hmodule, name);
         }
     }
@@ -311,11 +333,14 @@ bool SBOX_PROCESS::register_module(HMEMORYMODULE hModule, const QString &baseNam
 			SBOX_DBG("SBOX_PROCESS::register_module(): v_tls_raw_data_len=%u", v_tls_raw_data_len);
 			assert(v_tls_raw_data_len > 0);
 			assert(sizeof(BYTE)==1);
-            v_sbox_module.f_tls_raw_data.resize(v_tls_raw_data_len + v_tls_dir->SizeOfZeroFill + 1);
+            v_sbox_module.f_tls_raw_data.resize(v_tls_raw_data_len + v_tls_dir->SizeOfZeroFill);
 			SBOX_DBG("SBOX_PROCESS::register_module(): v_sbox_module.f_tls_raw_data.size()=%u", v_sbox_module.f_tls_raw_data.size());
 			SBOX_DBG("SBOX_PROCESS::register_module(): &v_sbox_module.f_tls_raw_data[0]=0x%08x", &v_sbox_module.f_tls_raw_data[0]);
 			memcpy(&v_sbox_module.f_tls_raw_data[0], (const void *)v_tls_dir->StartAddressOfRawData, v_tls_raw_data_len);
-			memset(&v_sbox_module.f_tls_raw_data[v_tls_raw_data_len], 0, v_tls_dir->SizeOfZeroFill);
+            if(v_tls_dir->SizeOfZeroFill)
+            {
+                memset(&v_sbox_module.f_tls_raw_data[v_tls_raw_data_len], 0, v_tls_dir->SizeOfZeroFill);
+            }
 		}
 		if(v_tls_dir->AddressOfCallBacks)
 		{
@@ -338,6 +363,45 @@ void SBOX_PROCESS::alloc_main_thread()
 	assert(f_teb == WineNtCurrentTeb());
 	g_sbox_thread = new SBOX_THREAD();
 	f_root_thread = g_sbox_thread;
+}
+SBOX_MODULE *SBOX_PROCESS::find_mdule_by_name(const QString &path)
+{
+    QFileInfo fi(path);
+    QString fname = fi.fileName().toLower();
+    for(size_t i=0; i<f_sbox_module_list.size(); i++)
+    {
+        SBOX_MODULE &module = f_sbox_module_list[i];
+        if(fname == module.f_basename)
+        {
+            return &module;
+        }
+    }
+    return NULL;
+}
+SBOX_MODULE *SBOX_PROCESS::find_mdule_by_codebase(PVOID codeBase)
+{
+    for(size_t i=0; i<f_sbox_module_list.size(); i++)
+    {
+        SBOX_MODULE &module = f_sbox_module_list[i];
+        PMEMORYMODULE pModule = (PMEMORYMODULE)module.f_hmodule;
+        if(codeBase == pModule->codeBase)
+        {
+            return &module;
+        }
+    }
+    return NULL;
+}
+SBOX_MODULE *SBOX_PROCESS::find_mdule_by_handle(HMEMORYMODULE handle)
+{
+    for(size_t i=0; i<f_sbox_module_list.size(); i++)
+    {
+        SBOX_MODULE &module = f_sbox_module_list[i];
+        if(handle == module.f_hmodule)
+        {
+            return &module;
+        }
+    }
+    return NULL;
 }
 SBOX_PROCESS *g_sbox_process = new SBOX_PROCESS();
 

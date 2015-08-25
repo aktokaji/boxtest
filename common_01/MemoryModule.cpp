@@ -398,10 +398,18 @@ BuildImportTable(PMEMORYMODULE module)
         }
         for (; *thunkRef; thunkRef++, funcRef++) {
             if (IMAGE_SNAP_BY_ORDINAL(*thunkRef)) {
+#if 0x0
                 *funcRef = module->getProcAddress(handle, (LPCSTR)IMAGE_ORDINAL(*thunkRef), module->userdata);
+#else
+                *funcRef = module->getProcAddress(handle, (LPCSTR)IMAGE_ORDINAL(*thunkRef), module->userdata, (LPCSTR)(codeBase + importDesc->Name));
+#endif
             } else {
                 PIMAGE_IMPORT_BY_NAME thunkData = (PIMAGE_IMPORT_BY_NAME) (codeBase + (*thunkRef));
+#if 0x0
                 *funcRef = module->getProcAddress(handle, (LPCSTR)&thunkData->Name, module->userdata);
+#else
+                *funcRef = module->getProcAddress(handle, (LPCSTR)&thunkData->Name, module->userdata, (LPCSTR)(codeBase + importDesc->Name));
+#endif
             }
             if (*funcRef == 0) {
                 result = FALSE;
@@ -430,9 +438,13 @@ static HCUSTOMMODULE _LoadLibrary(LPCSTR filename, void *userdata)
     return (HCUSTOMMODULE) result;
 }
 
+#if 0x0
 static FARPROC _GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata)
+#else
+static FARPROC _GetProcAddress(HCUSTOMMODULE module, LPCSTR name, void *userdata, LPCSTR from)
+#endif
 {
-    Q_UNUSED(userdata);
+    Q_UNUSED(userdata); Q_UNUSED(from);
     return (FARPROC) GetProcAddress((HMODULE) module, name);
 }
 
