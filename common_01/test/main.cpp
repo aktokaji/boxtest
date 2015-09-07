@@ -38,6 +38,12 @@ public slots:
         QFileInfo fi(path);
         g_sbox_process->f_debug_module_list.append(fi.fileName().toLower());
     }
+    void ignoreDll(const QString &path)
+    {
+        QFileInfo fi(path);
+        g_sbox_process->f_ignore_dll_list.append(fi.fileName().toLower());
+    }
+
 public:
     QList<QDir> loadPathList;
     QString mainProgram;
@@ -82,18 +88,20 @@ void myMsgHandler(QtMsgType, const QMessageLogContext &, const QString &msg)
 int main(int argc, char *argv[])
 //int main(int, char *[])
 {
+    ::MessageBoxA(NULL, "", "", MB_OK);
     qInstallMessageHandler(myMsgHandler);
-    MyLoader loader;
+    MyLoader *loader = NULL;
     {
         QCoreApplication app(argc, argv);
         Q_INIT_RESOURCE(main);
+        loader = new MyLoader;
         QFile scriptFile(":/main.qs");
         scriptFile.open(QIODevice::ReadOnly);
         QByteArray scriptBytes = scriptFile.readAll();
         qDebug().noquote() << "[scriptBytes]" << scriptBytes;
 
         QScriptEngine engine;
-        QObject *someObject = &loader;
+        QObject *someObject = loader;
         QScriptValue objectValue = engine.newQObject(someObject);
         engine.globalObject().setProperty("loader", objectValue);
 
@@ -131,9 +139,9 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    for(int i=0; i<loader.loadPathList.size(); i++)
+    for(int i=0; i<loader->loadPathList.size(); i++)
     {
-        QDir dir = loader.loadPathList[i];
+        QDir dir = loader->loadPathList[i];
         // 対象のファイル名フィルタ
         QStringList nameFilters;
         nameFilters << "*.dll";
@@ -176,7 +184,7 @@ int main(int argc, char *argv[])
     //RunFromMemory("E:\\testbed\\tlscb.exe");
     //RunFromMemory("E:\\testbed\\browser-wk2.exe");
     //RunFromMemory("E:\\testbed\\browser486.exe");
-    RunFromMemory(loader.mainProgram);
+    RunFromMemory(loader->mainProgram);
 
 
     //DBG("wmain(end))");

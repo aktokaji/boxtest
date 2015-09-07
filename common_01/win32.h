@@ -41,11 +41,11 @@ extern "C" {
 #endif
 
 #ifdef __cplusplus // ***** C++ only *****
+#include <QtCore>
 #include <memory>
 #include <string>
 #include <vector>
 #include "vardecl.h"
-#include <QtCore>
 QDebug operator<<(QDebug out, const wchar_t *str);
 namespace win32
 {

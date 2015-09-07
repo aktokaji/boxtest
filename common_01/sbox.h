@@ -59,6 +59,7 @@ public:
 	std::vector<SBOX_MODULE> f_sbox_module_list;
     QMap<QString, QString> f_dll_loc_map;
     QStringList f_debug_module_list;
+    QStringList f_ignore_dll_list;
     QMap<PWINE_TEB, SBOX_THREAD *> f_thread_list;
 	explicit SBOX_PROCESS();
 	virtual ~SBOX_PROCESS();
